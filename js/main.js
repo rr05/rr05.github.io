@@ -1,210 +1,138 @@
-(function(w, d) {
+// Dean Attali / Beautiful Jekyll 2016
 
-    var body = d.body,
-        gotop = d.getElementById('gotop'),
-        menu = d.getElementById('menu'),
-        header = d.getElementById('header'),
-        mask = d.getElementById('mask'),
-        menuToggle = d.getElementById('menu-toggle'),
-        menuOff = d.getElementById('menu-off'),
-        loading = d.getElementById('loading'),
-        animate = w.requestAnimationFrame,
-        ua = navigator.userAgent,
-        isMD = ua.indexOf('Mobile') !== -1 || ua.indexOf('Android') !== -1 || ua.indexOf('iPhone') !== -1 || ua.indexOf('iPad') !== -1 || ua.indexOf('KFAPWI') !== -1,
-        even = isMD ? 'touchstart' : 'click',
-        noop = function() {},
-        offset = function(el) {
-            var x = el.offsetLeft,
-                y = el.offsetTop;
+var main = {
 
-            if (el.offsetParent) {
-                var pOfs = arguments.callee(el.offsetParent);
-                x += pOfs.x;
-                y += pOfs.y;
-            }
+  bigImgEl : null,
+  numImgs : null,
 
-            return {
-                x: x,
-                y: y
-            };
-        },
-        docEl = ua.indexOf('Firefox') !== -1 ? d.documentElement : body;
-
-    var Blog = {
-        goTop: function() {
-            var top = docEl.scrollTop;
-            if (top > 400) {
-                docEl.scrollTop = top - 400;
-                animate(arguments.callee);
-            } else {
-                docEl.scrollTop = 0;
-            }
-        },
-        toggleGotop: function(top) {
-            if (top > w.innerHeight / 2) {
-                gotop.classList.add('in');
-            } else {
-                gotop.classList.remove('in');
-            }
-        },
-        toggleMenu: function(flag) {
-            if (flag) {
-                menu.classList.remove('hide');
-
-                if (w.innerWidth < 1241) {
-                    mask.classList.add('in');
-                    menu.classList.add('show');
-                }
-
-            } else {
-                menu.classList.remove('show');
-                mask.classList.remove('in');
-            }
-        },
-        fixedHeader: function(top) {
-            if (top > header.clientHeight) {
-                header.classList.add('fixed');
-            } else {
-                header.classList.remove('fixed');
-            }
-        },
-        fixedToc: (function() {
-            var toc = d.getElementById('post-toc');
-
-            if (!toc) {
-                return noop;
-            }
-
-            var tocOfs = offset(toc),
-                tocTop = tocOfs.y,
-                tocH = toc.offsetHeight,
-                isScroll = tocH > w.innerHeight,
-                titles = d.getElementById('post-content').querySelectorAll('h1, h2, h3, h4, h5, h6'),
-                cssTop = 150,
-                minTop = -1 * (tocH - w.innerHeight) - cssTop;
-
-            function scroll(top) {
-
-                for (var id, i = 0, len = titles.length; i < len; i++) {
-                    if (top > offset(titles[i]).y) {
-                        id = titles[i].id;
-                    }
-                }
-
-                var top = cssTop - toc.querySelectorAll('a[href="#' + id + '"]')[0].offsetTop;
-
-                toc.style.top = (top < minTop ? minTop : top) + 'px';
-            }
-
-            return function(top) {
-                if (top > tocTop) {
-                    toc.classList.add('fixed');
-
-                    if (isScroll) {
-                        scroll(top);
-                    }
-                } else {
-                    toc.classList.remove('fixed');
-                }
-
-            };
-        })(),
-        share: function() {
-
-            var share = d.getElementById('global-share'),
-                menuShare = d.getElementById('menu-share'),
-                div = d.createElement('div'),
-                sns = d.getElementsByClassName('share-sns'),
-                summary, api;
-
-            div.innerHTML = BLOG_SHARE.summary;
-            summary = div.innerText;
-            div = undefined;
-
-            api = 'http://www.jiathis.com/send/?webid={service}&url=' + BLOG_SHARE.url + '&title=' + BLOG_SHARE.title + '&summary=' + summary + '&pic=' + location.protocol + '//' + location.host + BLOG_SHARE.pic;
-
-            function goShare(service) {
-                w.open(encodeURI(api.replace('{service}', service)));
-            }
-
-            function show() {
-                mask.classList.add('in');
-                share.classList.add('in');
-            }
-
-            function hide() {
-                share.classList.remove('in');
-                mask.classList.remove('in');
-            }
-
-            [].forEach.call(sns, function(el) {
-                el.addEventListener('click', function() {
-                    goShare(this.dataset.service);
-                }, false);
-            });
-
-            menuShare.addEventListener(even, function() {
-                show();
-            }, false);
-
-            mask.addEventListener(even, function() {
-                hide();
-            }, false);
-        },
-        search: function() {
-            var searchWrap = d.getElementById('search-wrap');
-
-            function toggleSearch() {
-                searchWrap.classList.toggle('in');
-            }
-
-            d.getElementById('search').addEventListener(even, toggleSearch);
-            d.getElementById('search').addEventListener(even, toggleSearch);
+  init : function() {
+    // Shorten the navbar after scrolling a little bit down
+    $(window).scroll(function() {
+        if ($(".navbar").offset().top > 50) {
+            $(".navbar").addClass("top-nav-short");
+        } else {
+            $(".navbar").removeClass("top-nav-short");
         }
-    };
-
-    menu.addEventListener('touchmove', function(e) {
-        e.preventDefault();
     });
-
-    w.addEventListener('load', function() {
-        loading.classList.remove('active');
+    
+    // On mobile, hide the avatar when expanding the navbar menu
+    $('#main-navbar').on('show.bs.collapse', function () {
+      $(".navbar").addClass("top-nav-expanded");
     });
-
-    w.addEventListener('resize', function() {
-        Blog.toggleMenu();
+    $('#main-navbar').on('hidden.bs.collapse', function () {
+      $(".navbar").removeClass("top-nav-expanded");
     });
+	
+    // On mobile, when clicking on a multi-level navbar menu, show the child links
+    $('#main-navbar').on("click", ".navlinks-parent", function(e) {
+      var target = e.target;
+      $.each($(".navlinks-parent"), function(key, value) {
+        if (value == target) {
+          $(value).parent().toggleClass("show-children");
+        } else {
+          $(value).parent().removeClass("show-children");
+        }
+      });
+    });
+    
+    // Ensure nested navbar menus are not longer than the menu header
+    var menus = $(".navlinks-container");
+    if (menus.length > 0) {
+      var navbar = $("#main-navbar ul");
+      var fakeMenuHtml = "<li class='fake-menu' style='display:none;'><a></a></li>";
+      navbar.append(fakeMenuHtml);
+      var fakeMenu = $(".fake-menu");
 
-    gotop.addEventListener(even, function() {
-        animate(Blog.goTop);
-    }, false);
+      $.each(menus, function(i) {
+        var parent = $(menus[i]).find(".navlinks-parent");
+        var children = $(menus[i]).find(".navlinks-children a");
+        var words = [];
+        $.each(children, function(idx, el) { words = words.concat($(el).text().trim().split(/\s+/)); });
+        var maxwidth = 0;
+        $.each(words, function(id, word) {
+          fakeMenu.html("<a>" + word + "</a>");
+          var width =  fakeMenu.width();
+          if (width > maxwidth) {
+            maxwidth = width;
+          }
+        });
+        $(menus[i]).css('min-width', maxwidth + 'px')
+      });
 
-    menuToggle.addEventListener(even, function(e) {
-        Blog.toggleMenu(true);
-        e.preventDefault();
-    }, false);
+      fakeMenu.remove();
+    }        
+    
+    // show the big header image	
+    main.initImgs();
+  },
+  
+  initImgs : function() {
+    // If the page was large images to randomly select from, choose an image
+    if ($("#header-big-imgs").length > 0) {
+      main.bigImgEl = $("#header-big-imgs");
+      main.numImgs = main.bigImgEl.attr("data-num-img");
 
-    menuOff.addEventListener(even, function() {
-        menu.classList.add('hide');
-    }, false);
-
-    mask.addEventListener(even, function() {
-        Blog.toggleMenu();
-    }, false);
-
-    d.addEventListener('scroll', function() {
-        var top = docEl.scrollTop;
-        Blog.toggleGotop(top);
-        Blog.fixedHeader(top);
-        Blog.fixedToc(top);
-    }, false);
-
-    if (typeof BLOG_SHARE !== 'undefined') {
-        Blog.share();
+          // 2fc73a3a967e97599c9763d05e564189
+	  // set an initial image
+	  var imgInfo = main.getImgInfo();
+	  var src = imgInfo.src;
+	  var desc = imgInfo.desc;
+  	  main.setImg(src, desc);
+  	
+	  // For better UX, prefetch the next image so that it will already be loaded when we want to show it
+  	  var getNextImg = function() {
+	    var imgInfo = main.getImgInfo();
+	    var src = imgInfo.src;
+	    var desc = imgInfo.desc;		  
+	    
+		var prefetchImg = new Image();
+  		prefetchImg.src = src;
+		// if I want to do something once the image is ready: `prefetchImg.onload = function(){}`
+		
+  		setTimeout(function(){
+                  var img = $("<div></div>").addClass("big-img-transition").css("background-image", 'url(' + src + ')');
+  		  $(".intro-header.big-img").prepend(img);
+  		  setTimeout(function(){ img.css("opacity", "1"); }, 50);
+		  
+		  // after the animation of fading in the new image is done, prefetch the next one
+  		  //img.one("transitioned webkitTransitionEnd oTransitionEnd MSTransitionEnd", function(){
+		  setTimeout(function() {
+		    main.setImg(src, desc);
+			img.remove();
+  			getNextImg();
+		  }, 1000); 
+  		  //});		
+  		}, 6000);
+  	  };
+	  
+	  // If there are multiple images, cycle through them
+	  if (main.numImgs > 1) {
+  	    getNextImg();
+	  }
     }
+  },
+  
+  getImgInfo : function() {
+  	var randNum = Math.floor((Math.random() * main.numImgs) + 1);
+    var src = main.bigImgEl.attr("data-img-src-" + randNum);
+	var desc = main.bigImgEl.attr("data-img-desc-" + randNum);
+	
+	return {
+	  src : src,
+	  desc : desc
+	}
+  },
+  
+  setImg : function(src, desc) {
+	$(".intro-header.big-img").css("background-image", 'url(' + src + ')');
+	if (typeof desc !== typeof undefined && desc !== false) {
+	  $(".img-desc").text(desc).show();
+	} else {
+	  $(".img-desc").hide();  
+	}
+  }
+};
 
-    Waves.init();
-    Waves.attach('.global-share li', ['waves-block']);
-    Waves.attach('.article-tag-list-link, #page-nav a, #page-nav span', ['waves-button']);
+// 2fc73a3a967e97599c9763d05e564189
 
-})(window, document);
+document.addEventListener('DOMContentLoaded', main.init);
